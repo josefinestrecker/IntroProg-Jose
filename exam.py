@@ -19,6 +19,10 @@ sigma_values = [0.001, 1.5]
 rho_values = [1.001, 1.5]
 epsilon = 1.0
 
+#Define the utility function
+def utility(L, G, alpha, v):
+    return np.log(L**alpha * G**(1 - alpha)) - v * L**2 / 2
+
 # Calculate w_tilde
 w_tilde = (1 - tau) * w
 
@@ -65,6 +69,17 @@ result = minimize(negative_utility, 0.5, bounds=[(0.1, 0.9)])
 optimal_tau = result.x[0]
 print(f"The socially optimal tax rate is {optimal_tau}")
 
+# Plot the utility as a function of tau
+utilities = [utility(optimal_labor_supply((1 - tau) * w, kappa, alpha, v), G, alpha, v) for tau in tau_values]
+plt.figure(figsize=(10, 6))
+plt.plot(tau_values, utilities)
+plt.xlabel('tau')
+plt.ylabel('Utility')
+plt.title('Worker Utility for Different Tau Values')
+plt.axvline(x=optimal_tau, color='r', linestyle='--', label=f'Optimal tau = {optimal_tau}')
+plt.legend()
+plt.grid(True)
+plt.show
 
 ##CHAT BESKRIVER KODERNE FRA 2-4 SÅDAN HER
 #This code extends the previous code by adding plots 
@@ -257,3 +272,69 @@ print(f"The ex ante expected value of the salon with the alternative policy is {
 # a hiring or firing decision is made; otherwise, the previous labor supply is 
 # maintained. The code then calculates the value of H using this alternative policy by 
 # following a similar process as in Question 4.#
+
+
+
+#Problem 3
+
+import numpy as np
+from scipy.optimize import minimize
+
+# Define the Griewank function
+def griewank(x): 
+    A = np.sum(x**2 / 4000)
+    B = np.prod(np.cos(x / np.sqrt(np.arange(1, len(x) + 1))))
+    return A - B + 1
+
+# Bounds for x and tolerance τ > 0.
+bounds = [(-600, 600), (-600, 600)]
+τ = 1e-8
+
+# The number of warm-up iterations, K > 0, and the maximum number of iterations, underlined_K > K.
+K = 1000
+underlined_K = 10
+
+# Optimal solution
+optimal_solution = None
+optimal_value = np.inf
+
+# Store effective initial guesses
+initial_guesses = []
+
+# Iterations
+for k in range(K):
+    # A. Draw a random x^k uniformly within the chosen bounds.
+    x0 = np.random.uniform(bounds[0][0], bounds[0][1], 2)
+    initial_guesses.append(x0)
+    
+    # B. If k < underlined_K, go to step E.
+    if k < underlined_K:     #We skip to E
+        # E. Run the optimizer with x^k0 as initial guess and get the result x^(k*)
+        res = minimize(griewank, x0, method='BFGS', tol=τ)
+    
+        # F. Set x^* = x^(k*) if k = 0 or f(x^(k*)) < f(x^*)
+        if res.fun < optimal_value:
+            optimal_value = res.fun
+            optimal_solution = res.x
+
+            #We iterate underlined_K times.
+            #In each iteration, we first draw a random vector x0 uniformly within the chosen bounds.
+            #If the iteration count k is less than K, we proceed with the optimizer and run it with x0 as the initial guess (Step E). The result x^(k*) is obtained from the optimizer.
+            #Then, we set x^* to be equal to x^(k*) if it's the first iteration (i.e., k=0) or if the function value of the new result f(x^(k*)) is less than the function value of our current best solution f(x^*) (Step F).
+            #If k is not less than K, we skip the optimization step (Steps E and F) and continue with the next iteration.
+            #We repeat these steps until we have completed underlined_K iterations.
+            #Finally, we print out the optimal solution and the optimal value.
+            
+        # G. If f(x^*) < τ, go to step 4.
+        if optimal_value < τ:
+            break
+
+# 4. Return the result x^*.
+print("Optimal solution:", optimal_solution)
+print("Optimal value:", optimal_value)
+
+# Show initial guesses and how they vary
+for i, guess in enumerate(initial_guesses):
+    print("Iteration {}, initial guess: {}".format(i, guess))
+
+
