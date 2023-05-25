@@ -40,6 +40,8 @@ def negative_utility(tau):
     L = optimal_labor_supply(w_tilde, kappa, alpha, v)
     return -utility(L, G, alpha, v)
 
+#Question 5-6
+
 # Define the new utility function
 def utility_1(L, G, alpha, sigma, rho, v, epsilon):
     C = kappa + (1 + tau) * w * L
@@ -91,9 +93,9 @@ def policy(l_prev, l_star, Delta):
 #
 def negative_H(Delta):
     H_values = []
-    for k in range(K):
+    for k in range(K_2):
         kappa_k = kappa_series_2[k, :]
-        l_prev = optimal_labor_supply_2(kappa_k[0], eta, w)
+        l_prev = optimal_labor_supply_2(kappa_k[0], eta_2, w_2)
         total_profit = profits_2(kappa_k[0], l_prev, eta_2, w_2)
         for t in range(1, T_2):
             l_star = optimal_labor_supply_2(kappa_k[t], eta_2, w_2)
