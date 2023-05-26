@@ -15,7 +15,7 @@ tau = 0.3
 G_values = [1.0, 2.0]
 w_values = np.linspace(0.1, 2.0, 100)  # Create a range of w values
 tau_values = np.linspace(0.1, 0.9, 100)  # Create a range of tau values
-sigma_values = [0.001, 1.5]
+sigma_values = [1.001, 1.5]
 rho_values = [1.001, 1.5]
 epsilon = 1.0
 
@@ -46,10 +46,11 @@ plt.grid(True)
 plt.show()
 
 # Question 3: Plot the implied L, G, and worker utility for a grid of tau-values
-L_values = [optimal_labor_supply((1 - tau) * w, kappa, alpha, v) for tau in tau_values]
-utilities = [utility(L, G, alpha, v) for L, G in zip(L_values, G_values)]
+#Defining the new G
+G_values = [tau * w * L_star*((1-tau)*w) for tau, L_star in zip(tau_values, L_star_values)]  # Calculate G for each tau
+utilities = [utility(L, G, alpha, v) for L, G in zip(L_star_values, G_values)]
 plt.figure(figsize=(10, 6))
-plt.plot(tau_values, L_values, label='L')
+plt.plot(tau_values, L_star_values, label='L')
 plt.plot(tau_values, G_values, label='G')
 plt.plot(tau_values, utilities, label='Utility')
 plt.xlabel('tau')
@@ -81,7 +82,6 @@ plt.legend()
 plt.grid(True)
 plt.show
 
-##CHAT BESKRIVER KODERNE FRA 2-4 SÅDAN HER
 #This code extends the previous code by adding plots 
 # for the dependence of optimal labor supply on w and the implied 
 # L, G, and worker utility for a grid of tau values. It also uses 
@@ -90,16 +90,15 @@ plt.show
 # The negative_utility function is defined because minimize 
 # finds the minimum of a function, and we want to find the maximum utility.
 
-
 # Define the new utility function
 def utility(L, G, alpha, sigma, rho, v, epsilon):
     C = kappa + (1 + tau) * w * L
-    return ((alpha * C**((sigma - 1) / sigma) + (1 - alpha) * G**((sigma - 1) / sigma))**((1 - rho) / sigma) - 1) / (1 - rho) - v * L**(1 + epsilon) / (1 + epsilon)
+    return (((alpha * C**((sigma - 1) / sigma) + (1 - alpha) * G**((sigma-1) / (sigma)))**((sigma / (sigma-1)))**((1 - rho)) - 1) / (1 - rho)) - v * L**(1 + epsilon) / (1 + epsilon)
 
 # Define the function for the equilibrium condition
 def equilibrium(G, w_tilde, alpha, sigma, rho, v, epsilon):
     L = optimal_labor_supply(w_tilde, kappa, alpha, v)
-    return G - tau * w * L
+    return G - tau * w_tilde * L
 
 # Question 5: Find the G that solves the equilibrium condition
 for sigma, rho in zip(sigma_values, rho_values):
@@ -119,7 +118,6 @@ for sigma, rho in zip(sigma_values, rho_values):
     print(f"For sigma = {sigma} and rho = {rho}, the socially optimal tax rate is {optimal_tau}")
 
 
-##CHAT BESKRIVER KODERNE FRA 5-6 SÅDAN HER
 #This code extends the previous code by adding the 
 # new utility function and the equilibrium condition. 
 # It then uses scipy.optimize.fsolve to find the G that solves 
@@ -179,23 +177,6 @@ for k in range(K):
 H = np.mean(H_values)
 print(f"The ex ante expected value of the salon is {H}")
 
-
-#IGEN HHER ER DER BESRKIVELSE AF KODERNE FOR DE TO FØRSTE SPØRGSMÅL
-
-#This code first sets up the parameters as given in the problem. 
-# It then defines a function optimal_labor_supply that calculates the optimal 
-# labor supply given kappa, eta, and w, and a function profits that calculates 
-# the profits given kappa, l, eta, and w. It verifies numerically that the 
-# optimal labor supply choice maximizes profits for each kappa in kappa_values.
-
-#Question 2, it generates K random shock series epsilon_series and calculates 
-# the corresponding kappa_series. It then calculates the ex ante expected value 
-# of the salon H by summing the discounted profits for each period and each 
-# shock series, taking into account the adjustment cost iota if the labor 
-# supply choice changes from the previous period. The expected value is 
-# then approximated by the mean of these total profits over all shock series.
-
-
 # Define the function for the policy
 def policy(l_prev, l_star, Delta):
     return l_star if abs(l_prev - l_star) > Delta * abs(l_prev) else l_prev
@@ -254,25 +235,6 @@ for k in range(K):
 H = np.mean(H_values)
 print(f"The ex ante expected value of the salon with the alternative policy is {H}")
 
-#IGEN CHAT BESKRIVELSER
-#Question 4: we are finding the optimal Delta value that maximizes the 
-# value of H. The function negative_H(Delta) calculates the average value 
-# of H for a given Delta value. It iterates through the shock series and 
-# calculates the total profit by following the given policy with the Delta value.
-#  The negative sign is used because we are using the minimize function to find 
-# the maximum of H. The minimize function from the SciPy library is used to 
-# find the minimum of the negative_H function, which essentially finds the maximum 
-# of H. The result contains the optimal Delta value, which is then printed.
-
-#In Question 5, an alternative policy is suggested to improve profitability. 
-# The function alternative_policy(l_prev, l_star, Delta) is defined, which 
-# determines whether to hire or fire hairdressers based on the difference between 
-# the previous labor supply l_prev and the optimal labor supply l_star. 
-# If the difference is greater than Delta times the absolute value of l_star, 
-# a hiring or firing decision is made; otherwise, the previous labor supply is 
-# maintained. The code then calculates the value of H using this alternative policy by 
-# following a similar process as in Question 4.#
-
 
 
 #Problem 3
@@ -316,19 +278,10 @@ for k in range(K):
         if res.fun < optimal_value:
             optimal_value = res.fun
             optimal_solution = res.x
-
-            #We iterate underlined_K times.
-            #In each iteration, we first draw a random vector x0 uniformly within the chosen bounds.
-            #If the iteration count k is less than K, we proceed with the optimizer and run it with x0 as the initial guess (Step E). The result x^(k*) is obtained from the optimizer.
-            #Then, we set x^* to be equal to x^(k*) if it's the first iteration (i.e., k=0) or if the function value of the new result f(x^(k*)) is less than the function value of our current best solution f(x^*) (Step F).
-            #If k is not less than K, we skip the optimization step (Steps E and F) and continue with the next iteration.
-            #We repeat these steps until we have completed underlined_K iterations.
-            #Finally, we print out the optimal solution and the optimal value.
             
         # G. If f(x^*) < τ, go to step 4.
         if optimal_value < τ:
             break
-
 # 4. Return the result x^*.
 print("Optimal solution:", optimal_solution)
 print("Optimal value:", optimal_value)
@@ -336,5 +289,26 @@ print("Optimal value:", optimal_value)
 # Show initial guesses and how they vary
 for i, guess in enumerate(initial_guesses):
     print("Iteration {}, initial guess: {}".format(i, guess))
+
+
+#in 3:
+#We iterate underlined_K times.
+#In each iteration, we first draw a random vector x0 uniformly within the chosen bounds.
+#If the iteration count k is less than K, we proceed with the optimizer and run it with x0 as the initial guess (Step E). The result x^(k*) is obtained from the optimizer.
+#Then, we set x^* to be equal to x^(k*) if it's the first iteration (i.e., k=0) or if the function value of the new result f(x^(k*)) is less than the function value of our current best solution f(x^*) (Step F).
+#If k is not less than K, we skip the optimization step (Steps E and F) and continue with the next iteration.
+#We repeat these steps until we have completed underlined_K iterations.
+#Further we print out the optimal solution and the optimal value.
+#Finally, we use the funciton break, which will lead us directly to 4, if f(x^*) < tau
+
+#the optimal solution found suggests that when $x_1$ is approximately -50.24035172 and $x_2$ is approximately 35.50754101, the Griewank function is at its minimum within the defined bounds and given the initial guesses and tolerances.
+
+#4.2
+#to snwer the question: "Is it a better idea to set ▁K=100? Is the convergense faster?"
+# we should just change the value of underlined_K to 100 from 10 and analyze it. 
+#however increasing the iterations of underlined_K can potentially lead to better solutions, as we are sampling more initial points, 
+# increasing the chance of starting near the global minimu
+# But this does not necessarily mean that the convergence will be faster. 
+# In fact, increasing underlined_K will likely increase the total runtime of your program, aswe are performing more optimization runs.
 
 
